@@ -1,0 +1,84 @@
+- name: Provision AWS Infrastructure
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    region: us-east-1
+    ec2_instance_type: t2.micro
+    ami_id: ami-0e1bed4f06a3b463d  # Ubuntu 20.04 LTS (check AMI ID for your region)
+    key_name: laptop  # Use your existing key pair
+    security_group_name: web-sg
+    db_instance_identifier: my-db-instance
+    db_username: admin
+    db_password: mysecurepassword
+    vpc_id: vpc-0e4162b9188b6a7fe  # Replace with your VPC ID
+  tasks:
+    - name: Create a security group for EC2
+      amazon.aws.ec2_security_group:
+        name: "{{ security_group_name }}"
+        description: "Allow HTTP and SSH access"
+        region: "{{ region }}"
+        vpc_id: "{{ vpc_id }}"
+        rules:
+          - proto: tcp
+            ports:
+              - 22
+              - 80
+            cidr_ip: 0.0.0.0/0
+      register: ec2_sg
+
+    - name: Launch EC2 instance
+      amazon.aws.ec2_instance:
+        name: web-server
+        key_name: "{{ key_name }}"
+        instance_type: "{{ ec2_instance_type }}"
+        image_id: "{{ ami_id }}"
+        region: "{{ region }}"
+        security_groups: ["{{ security_group_name }}"]
+        wait: yes
+        network:
+          assign_public_ip: yes
+      register: ec2_instance
+
+    - name: Debug EC2 instance output  # ADD THIS TASK IMMEDIATELY AFTER EC2 CREATION
+      debug:
+        var: ec2_instance
+
+    - name: Extract EC2 security group ID
+      set_fact:
+        ec2_security_group_id: "{{ ec2_sg.group_id }}"
+
+    - name: Create an RDS security group
+      amazon.aws.ec2_security_group:
+        name: rds-sg
+        description: Allow MySQL access from EC2 instance
+        region: "{{ region }}"
+        vpc_id: "{{ vpc_id }}"
+        rules:
+          - proto: tcp
+            from_port: 3306
+            to_port: 3306
+            group_id: "{{ ec2_security_group_id }}"
+      register: rds_sg
+
+    - name: Provision RDS MySQL instance
+      amazon.aws.rds_instance:
+        db_instance_identifier: "{{ db_instance_identifier }}"
+        engine: mysql
+        engine_version: "8.0.35"  # Change to a supported version
+        db_instance_class: db.t3.micro  # Change instance type to t3.micro
+        allocated_storage: 20
+        username: "{{ db_username }}"
+        password: "{{ db_password }}"
+        publicly_accessible: no
+        vpc_security_group_ids: ["{{ rds_sg.group_id }}"]
+        region: "{{ region }}"
+        state: present
+      register: rds_instance
+
+    - name: Output EC2 and RDS details
+      debug:
+        msg:
+          - "EC2 Public IP: {{ ec2_instance.instances[0].public_ip_address | default('No Public IP Assigned') }}"
+          - "RDS Endpoint: {{ rds_instance.endpoint | default('No RDS Endpoint') }}"
+
