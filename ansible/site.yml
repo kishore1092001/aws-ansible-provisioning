@@ -1,0 +1,11 @@
+- name: Provision AWS Infrastructure
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars_files:
+    - vault/secrets.yml  # Load sensitive variables
+  tasks:
+    - include_tasks: tasks/security_groups.yml
+    - include_tasks: tasks/ec2.yml
+    - include_tasks: tasks/rds.yml
+

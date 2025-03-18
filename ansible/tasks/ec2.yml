@@ -1,0 +1,17 @@
+- name: Launch EC2 instance
+  amazon.aws.ec2_instance:
+    name: web-server
+    key_name: "{{ key_name }}"
+    instance_type: "{{ ec2_instance_type }}"
+    image_id: "{{ ami_id }}"
+    region: "{{ region }}"
+    security_groups: ["{{ security_group_name }}"]
+    wait: yes
+    network:
+      assign_public_ip: yes
+  register: ec2_instance
+
+- name: Debug EC2 instance output
+  debug:
+    var: ec2_instance
+

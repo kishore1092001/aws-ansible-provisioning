@@ -1,0 +1,21 @@
+- name: Provision RDS MySQL instance
+  amazon.aws.rds_instance:
+    db_instance_identifier: "{{ db_instance_identifier }}"
+    engine: mysql
+    engine_version: "8.0.35"
+    db_instance_class: db.t3.micro
+    allocated_storage: 20
+    username: "{{ db_username }}"
+    password: "{{ db_password }}"
+    publicly_accessible: no
+    vpc_security_group_ids: ["{{ rds_sg.group_id }}"]
+    region: "{{ region }}"
+    state: present
+  register: rds_instance
+
+- name: Output EC2 and RDS details
+  debug:
+    msg:
+      - "EC2 Public IP: {{ ec2_instance.instances[0].public_ip_address | default('No Public IP Assigned') }}"
+      - "RDS Endpoint: {{ rds_instance.endpoint | default('No RDS Endpoint') }}"
+

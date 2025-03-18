@@ -1,0 +1,31 @@
+- name: Create a security group for EC2
+  amazon.aws.ec2_security_group:
+    name: "{{ security_group_name }}"
+    description: "Allow HTTP and SSH access"
+    region: "{{ region }}"
+    vpc_id: "{{ vpc_id }}"
+    rules:
+      - proto: tcp
+        ports:
+          - 22
+          - 80
+        cidr_ip: 0.0.0.0/0
+  register: ec2_sg
+
+- name: Extract EC2 security group ID
+  set_fact:
+    ec2_security_group_id: "{{ ec2_sg.group_id }}"
+
+- name: Create an RDS security group
+  amazon.aws.ec2_security_group:
+    name: rds-sg
+    description: Allow MySQL access from EC2 instance
+    region: "{{ region }}"
+    vpc_id: "{{ vpc_id }}"
+    rules:
+      - proto: tcp
+        from_port: 3306
+        to_port: 3306
+        group_id: "{{ ec2_security_group_id }}"
+  register: rds_sg
+
