@@ -1,0 +1,10 @@
+region = "us-east-1"
+vpc_id = "vpc-0e4162b9188b6a7fe"
+ami_id = "ami-0e1bed4f06a3b463d"
+key_name = "laptop"
+ec2_instance_type = "t2.micro"
+security_group_name = "web-sg"
+db_instance_identifier = "my-db-instance"
+db_username = "admin"
+db_password = "mysecurepassword"
+
